@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Price Viewer</title>
+    <title>Stock Market Viewer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            font-family: Arial, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
@@ -19,34 +19,16 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .search-container {
+        .search-section {
             margin-bottom: 20px;
         }
-        .search-results {
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            display: none;
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
         }
-        .search-result-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-        .search-result-item:hover {
-            background-color: #f0f0f0;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        input, select {
+        input, select, button {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -56,40 +38,51 @@
             background-color: #007bff;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
+            transition: background-color 0.2s;
         }
         button:hover {
             background-color: #0056b3;
+        }
+        #searchResults {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .stock-item {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .stock-item:hover {
+            background-color: #f0f0f0;
         }
         .chart-container {
             margin-top: 20px;
             height: 400px;
         }
-        .error-message {
-            color: #dc3545;
-            margin-top: 10px;
-            display: none;
+        #selectedStock {
+            font-weight: bold;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Stock Price Viewer</h1>
+        <h1>Stock Market Viewer</h1>
         
-        <div class="search-container">
-            <div class="form-group">
-                <label for="stockSearch">Search for a stock:</label>
-                <input type="text" id="stockSearch" placeholder="Enter company name or symbol" autocomplete="off">
+        <div class="search-section">
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="Search for a stock...">
+                <button onclick="searchStocks()">Search</button>
             </div>
-            <div id="searchResults" class="search-results"></div>
+            <div id="searchResults"></div>
         </div>
 
-        <div class="form-group">
-            <label for="period">Time Period:</label>
-            <select id="period">
+        <div id="selectedStock"></div>
+        
+        <div class="controls">
+            <select id="periodSelect">
                 <option value="1d">1 Day</option>
                 <option value="1w">1 Week</option>
                 <option value="1m">1 Month</option>
@@ -98,26 +91,21 @@
                 <option value="1y" selected>1 Year</option>
                 <option value="5y">5 Years</option>
             </select>
-        </div>
-
-        <div class="form-group">
-            <label for="interval">Interval:</label>
-            <select id="interval">
+            
+            <select id="intervalSelect">
                 <option value="1d">Daily</option>
                 <option value="1w">Weekly</option>
                 <option value="1m">Monthly</option>
             </select>
+            
+            <button onclick="updateChart()">Update Chart</button>
         </div>
 
-        <button id="fetchData">Fetch Stock Data</button>
-        
-        <div id="errorMessage" class="error-message"></div>
-        
         <div class="chart-container">
             <canvas id="stockChart"></canvas>
         </div>
     </div>
 
-    <script src="/js/stock-viewer.js"></script>
+    <script src="/js/stockViewer.js"></script>
 </body>
 </html> 
