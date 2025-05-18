@@ -23,10 +23,60 @@ exports.searchStocks = async (req, res) => {
 exports.getHistoricalData = async (req, res) => {
   try {
     const { symbol } = req.params;
-    const { period, interval } = req.query;
+    const { startDate: reqStartDate, endDate: reqEndDate } = req.query;
     
-    const historicalData = await yahooFinanceService.getHistoricalData(symbol, period, interval);
-    res.json(historicalData);
+    // Validate dates with strict UTC handling
+    const start = new Date(reqStartDate + 'T00:00:00Z');
+    const end = new Date(reqEndDate + 'T23:59:59Z');
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // Set to end of current day for comparison
+    
+    // Check if dates are valid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+    
+    // Log validation details
+    console.log('Date validation:', {
+      requestedStart: start.toISOString(),
+      requestedEnd: end.toISOString(),
+      currentTime: now.toISOString(),
+      isStartFuture: start > now,
+      isEndFuture: end > now
+    });
+
+    // Check if dates are in the future (compare dates only, not times)
+    const startDateOnly = new Date(start.toISOString().split('T')[0]);
+    const endDateOnly = new Date(end.toISOString().split('T')[0]);
+    const todayDate = new Date(now.toISOString().split('T')[0]);
+
+    if (startDateOnly > todayDate || endDateOnly > todayDate) {
+      return res.status(400).json({ 
+        error: 'Cannot fetch data for future dates',
+        details: {
+          requestedStartDate: start.toISOString().split('T')[0],
+          requestedEndDate: end.toISOString().split('T')[0],
+          currentDate: todayDate.toISOString().split('T')[0]
+        }
+      });
+    }
+    
+    // Check if start date is after end date
+    if (start > end) {
+      return res.status(400).json({ error: 'Start date must be before end date' });
+    }
+    
+    // Fetch both historical data and news in parallel
+    const [historicalData, newsData] = await Promise.all([
+      yahooFinanceService.getHistoricalData(symbol, reqStartDate, reqEndDate),
+      alphaVantageService.getStockNews(symbol, reqStartDate, reqEndDate)
+    ]);
+
+    // Return combined data
+    res.json({
+      historical: historicalData,
+      news: newsData
+    });
   } catch (error) {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ error: error.message });
@@ -36,13 +86,14 @@ exports.getHistoricalData = async (req, res) => {
   }
 };
 
-// Get news for a stock on a specific date
+// Get news for a stock (now used for getting news details when clicking a marker)
 exports.getStockNews = async (req, res) => {
   try {
     const { symbol } = req.params;
     const { date } = req.query;
     
-    const news = await alphaVantageService.getStockNews(symbol, date);
+    // Fetch news for a single day when clicking a marker
+    const news = await alphaVantageService.getStockNews(symbol, date, date);
     res.json(news);
   } catch (error) {
     if (error.name === 'ValidationError') {

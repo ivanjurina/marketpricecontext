@@ -208,6 +208,64 @@
             padding: 20px;
             color: #888;
         }
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .date-range label {
+            color: #ddd;
+            font-size: 14px;
+        }
+        
+        .date-range input[type="date"] {
+            background-color: #333;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .date-range input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(45, 45, 45, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #444;
+            border-top: 4px solid #2962ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            color: #fff;
+            margin-left: 15px;
+            font-size: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -225,23 +283,13 @@
         <div id="selectedStock"></div>
         
         <div class="controls">
-            <select id="periodSelect">
-                <option value="1d">1 Day</option>
-                <option value="1w">1 Week</option>
-                <option value="1m">1 Month</option>
-                <option value="3m">3 Months</option>
-                <option value="6m">6 Months</option>
-                <option value="1y" selected>1 Year</option>
-                <option value="5y">5 Years</option>
-            </select>
-            
-            <select id="intervalSelect">
-                <option value="1d">Daily</option>
-                <option value="1w">Weekly</option>
-                <option value="1m">Monthly</option>
-            </select>
-            
-            <button onclick="updateChart()">Update Chart</button>
+            <div class="date-range">
+                <label for="startDate">From:</label>
+                <input type="date" id="startDate">
+                <label for="endDate">To:</label>
+                <input type="date" id="endDate">
+                <button onclick="updateChart()">Update Chart</button>
+            </div>
 
             <div class="indicator-controls">
                 <label class="indicator-toggle sma20" title="20-day Simple Moving Average">
