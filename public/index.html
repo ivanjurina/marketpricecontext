@@ -4,20 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Market Viewer</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #1a1a1a;
+            color: #ffffff;
         }
         .container {
-            background-color: white;
+            background-color: #2d2d2d;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         .search-section {
             margin-bottom: 20px;
@@ -27,43 +28,100 @@
             gap: 10px;
             margin-bottom: 20px;
             align-items: center;
+            flex-wrap: wrap;
         }
-        input, select, button {
+        input, select {
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid #444;
             border-radius: 4px;
             font-size: 14px;
+            background-color: #333;
+            color: #fff;
         }
         button {
-            background-color: #007bff;
+            background-color: #2962ff;
             color: white;
             border: none;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #1e4bd8;
+            transform: translateY(-1px);
+        }
+        .indicator-controls {
+            display: flex;
+            gap: 15px;
+            margin-left: auto;
+            align-items: center;
+        }
+        .indicator-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .indicator-toggle input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+        .indicator-toggle.sma20 {
+            color: #2962FF;
+        }
+        .indicator-toggle.sma50 {
+            color: #FF6D00;
         }
         #searchResults {
             margin-top: 10px;
             max-height: 200px;
             overflow-y: auto;
+            background-color: #333;
+            border-radius: 4px;
         }
         .stock-item {
-            padding: 8px;
+            padding: 12px;
             cursor: pointer;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #444;
+            transition: background-color 0.2s;
         }
         .stock-item:hover {
-            background-color: #f0f0f0;
+            background-color: #444;
         }
         .chart-container {
             margin-top: 20px;
-            height: 400px;
+            height: 600px;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 8px;
+            position: relative;
         }
         #selectedStock {
             font-weight: bold;
             margin-bottom: 10px;
+            color: #2962ff;
+        }
+        h1 {
+            color: #2962ff;
+            margin-bottom: 30px;
+        }
+        /* Custom scrollbar for search results */
+        #searchResults::-webkit-scrollbar {
+            width: 8px;
+        }
+        #searchResults::-webkit-scrollbar-track {
+            background: #333;
+            border-radius: 4px;
+        }
+        #searchResults::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        #searchResults::-webkit-scrollbar-thumb:hover {
+            background: #666;
         }
     </style>
 </head>
@@ -99,11 +157,20 @@
             </select>
             
             <button onclick="updateChart()">Update Chart</button>
+
+            <div class="indicator-controls">
+                <label class="indicator-toggle sma20" title="20-day Simple Moving Average">
+                    <input type="checkbox" id="sma20Toggle" checked onchange="toggleSMA(20, this.checked)">
+                    SMA 20
+                </label>
+                <label class="indicator-toggle sma50" title="50-day Simple Moving Average">
+                    <input type="checkbox" id="sma50Toggle" checked onchange="toggleSMA(50, this.checked)">
+                    SMA 50
+                </label>
+            </div>
         </div>
 
-        <div class="chart-container">
-            <canvas id="stockChart"></canvas>
-        </div>
+        <div class="chart-container" id="chart"></div>
     </div>
 
     <script src="/js/stockViewer.js"></script>

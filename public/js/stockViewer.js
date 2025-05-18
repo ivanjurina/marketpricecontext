@@ -1,5 +1,9 @@
-let currentChart = null;
+let chart = null;
+let candleSeries = null;
 let selectedSymbol = null;
+let sma20Series = null;
+let sma50Series = null;
+let lastCandleData = null;
 
 // Function to search for stocks
 async function searchStocks() {
@@ -68,61 +72,146 @@ async function updateChart() {
     }
 }
 
+// Function to format data for candlestick chart
+function formatCandlestickData(data) {
+    return data.map(item => ({
+        time: new Date(item.date).getTime() / 1000,
+        open: parseFloat(item.open),
+        high: parseFloat(item.high),
+        low: parseFloat(item.low),
+        close: parseFloat(item.close)
+    }));
+}
+
+// Function to calculate SMA
+function calculateSMA(data, count) {
+    const avg = [];
+    for (let i = count - 1; i < data.length; i++) {
+        let sum = 0;
+        for (let j = 0; j < count; j++) {
+            sum += data[i - j].close;
+        }
+        avg.push({
+            time: data[i].time,
+            value: sum / count
+        });
+    }
+    return avg;
+}
+
+// Function to toggle SMA visibility
+function toggleSMA(period, visible) {
+    if (period === 20 && sma20Series) {
+        sma20Series.applyOptions({
+            visible: visible
+        });
+    } else if (period === 50 && sma50Series) {
+        sma50Series.applyOptions({
+            visible: visible
+        });
+    }
+}
+
 // Function to render the chart
 function renderChart(data) {
-    const ctx = document.getElementById('stockChart').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (currentChart) {
-        currentChart.destroy();
-    }
+    const container = document.getElementById('chart');
+    container.innerHTML = ''; // Clear previous chart
 
-    // Prepare data for the chart
-    const chartData = {
-        labels: data.map(item => new Date(item.date).toLocaleDateString()),
-        datasets: [{
-            label: `${selectedSymbol} Stock Price`,
-            data: data.map(item => item.close),
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1,
-            fill: false
-        }]
+    // Create chart
+    const chartOptions = {
+        width: container.clientWidth,
+        height: container.clientHeight,
+        layout: {
+            backgroundColor: '#2d2d2d',
+            textColor: '#ffffff',
+        },
+        grid: {
+            vertLines: { color: '#404040' },
+            horzLines: { color: '#404040' },
+        },
+        crosshair: {
+            mode: 1,  // CrosshairMode.Normal
+            vertLine: {
+                color: '#555555',
+                width: 1,
+                style: 0,  // LineStyle.Solid
+            },
+            horzLine: {
+                color: '#555555',
+                width: 1,
+                style: 0,  // LineStyle.Solid
+            },
+        },
+        timeScale: {
+            borderColor: '#444444',
+            timeVisible: true,
+            rightOffset: 5,
+            barSpacing: 10,
+            fixLeftEdge: true,
+            fixRightEdge: true,
+            minBarSpacing: 5,
+        },
+        rightPriceScale: {
+            borderColor: '#444444',
+            scaleMargins: {
+                top: 0.1,
+                bottom: 0.1,
+            },
+        },
     };
 
-    // Create new chart
-    currentChart = new Chart(ctx, {
-        type: 'line',
-        data: chartData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    }
-                },
-                y: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Price ($)'
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `$${context.parsed.y.toFixed(2)}`;
-                        }
-                    }
-                }
-            }
-        }
+    // Create the chart instance
+    chart = window.LightweightCharts.createChart(container, chartOptions);
+
+    // Handle resize
+    const resizeHandler = () => {
+        chart.applyOptions({
+            width: container.clientWidth,
+            height: container.clientHeight
+        });
+    };
+    window.addEventListener('resize', resizeHandler);
+
+    // Add candlestick series
+    const candlestickOptions = {
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderVisible: true,
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+    };
+
+    candleSeries = chart.addCandlestickSeries(candlestickOptions);
+    const candleData = formatCandlestickData(data);
+    lastCandleData = candleData; // Store for SMA recalculation
+    candleSeries.setData(candleData);
+
+    // Add SMA lines with visibility based on checkboxes
+    const sma20Visible = document.getElementById('sma20Toggle').checked;
+    const sma50Visible = document.getElementById('sma50Toggle').checked;
+
+    sma20Series = chart.addLineSeries({
+        color: '#2962FF',
+        lineWidth: 2,
+        title: 'SMA 20',
+        priceLineVisible: false,
+        visible: sma20Visible
     });
+
+    sma50Series = chart.addLineSeries({
+        color: '#FF6D00',
+        lineWidth: 2,
+        title: 'SMA 50',
+        priceLineVisible: false,
+        visible: sma50Visible
+    });
+
+    // Calculate and set SMA data
+    sma20Series.setData(calculateSMA(candleData, 20));
+    sma50Series.setData(calculateSMA(candleData, 50));
+
+    // Fit content
+    chart.timeScale().fitContent();
 }
 
 // Add event listener for search input (search when Enter is pressed)
