@@ -64,4 +64,34 @@ router.get('/search', stockController.searchStocks);
  */
 router.get('/:symbol/historical', stockController.getHistoricalData);
 
+/**
+ * @swagger
+ * /api/stocks/{symbol}/news:
+ *   get:
+ *     summary: Get news for a specific stock on a given date
+ *     description: Returns news articles for a stock symbol on a specific date
+ *     parameters:
+ *       - in: path
+ *         name: symbol
+ *         required: true
+ *         description: Stock symbol (e.g., AAPL)
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         description: Date in YYYY-MM-DD format
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: List of news articles
+ *       400:
+ *         description: Invalid parameters
+ *       500:
+ *         description: Server error
+ */
+router.get('/:symbol/news', stockController.getStockNews);
+
 module.exports = router;

@@ -112,6 +112,136 @@ function toggleSMA(period, visible) {
     }
 }
 
+// Function to fetch news for a specific date
+async function fetchNewsForDate(symbol, date) {
+    try {
+        const formattedDate = new Date(date * 1000).toISOString().split('T')[0];
+        
+        // Check if date is in the future
+        if (new Date(formattedDate) > new Date()) {
+            displayNews([], formattedDate, true);
+            return;
+        }
+        
+        // Show loading state
+        const newsList = document.getElementById('newsList');
+        newsList.innerHTML = '<div class="loading">Fetching news...</div>';
+        
+        const response = await fetch(`/api/stocks/${symbol}/news?date=${formattedDate}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch news');
+        }
+
+        displayNews(data, formattedDate);
+    } catch (error) {
+        console.error('Error fetching news:', error);
+        // Extract the actual error message if it exists
+        const errorMessage = error.message.includes('Failed to fetch news:') 
+            ? error.message 
+            : 'Failed to load news. Please try again later.';
+        displayNewsError(errorMessage);
+    }
+}
+
+// Function to display news
+function displayNews(news, date, isFutureDate = false) {
+    const newsDate = document.getElementById('newsDate');
+    const newsList = document.getElementById('newsList');
+    
+    // Format date for display
+    const displayDate = new Date(date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    newsDate.textContent = displayDate;
+    
+    if (isFutureDate) {
+        newsList.innerHTML = `<div class="loading">Cannot fetch news for future date ${displayDate}</div>`;
+        return;
+    }
+    
+    if (!news || news.length === 0) {
+        newsList.innerHTML = `<div class="loading">No news found for ${displayDate}</div>`;
+        return;
+    }
+
+    newsList.innerHTML = news.map(item => {
+        // Format the published date
+        const publishDate = new Date(item.datetime);
+        const formattedTime = publishDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+        const formattedDate = publishDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+
+        // Get sentiment color
+        const sentimentColor = getSentimentColor(item.sentiment);
+        const sentimentScore = item.sentiment_score ? ` (${item.sentiment_score.toFixed(2)})` : '';
+
+        return `
+            <div class="news-item">
+                <div class="news-title">
+                    <a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.title}</a>
+                </div>
+                <div class="news-source">
+                    <span>${item.source}</span>
+                    <span class="news-date">${formattedDate} ${formattedTime}</span>
+                </div>
+                ${item.sentiment ? `
+                <div class="news-sentiment" style="color: ${sentimentColor}">
+                    Sentiment: ${item.sentiment}${sentimentScore}
+                </div>
+                ` : ''}
+                <div class="news-summary">${item.summary}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Helper function to get color for sentiment
+function getSentimentColor(sentiment) {
+    switch (sentiment?.toLowerCase()) {
+        case 'bullish':
+        case 'positive':
+            return '#26a69a';
+        case 'bearish':
+        case 'negative':
+            return '#ef5350';
+        case 'neutral':
+            return '#888888';
+        default:
+            return '#ffffff';
+    }
+}
+
+// Function to display news error
+function displayNewsError(message) {
+    const newsList = document.getElementById('newsList');
+    const newsDate = document.getElementById('newsDate');
+    
+    // Clear the date display when showing an error
+    newsDate.textContent = '';
+    
+    // Show a user-friendly error message
+    newsList.innerHTML = `
+        <div class="loading">
+            ${message}
+            <br><br>
+            <small>Try selecting a different date or refreshing the page.</small>
+        </div>
+    `;
+}
+
 // Function to render the chart
 function renderChart(data) {
     const container = document.getElementById('chart');
@@ -185,6 +315,13 @@ function renderChart(data) {
     const candleData = formatCandlestickData(data);
     lastCandleData = candleData; // Store for SMA recalculation
     candleSeries.setData(candleData);
+
+    // Add click handler for candlesticks
+    chart.subscribeClick((param) => {
+        if (param.time) {
+            fetchNewsForDate(selectedSymbol, param.time);
+        }
+    });
 
     // Add SMA lines with visibility based on checkboxes
     const sma20Visible = document.getElementById('sma20Toggle').checked;

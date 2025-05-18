@@ -1,6 +1,8 @@
 // controllers/stockController.js - Basic structure to check
 
 const yahooFinanceService = require('../services/yahooFinanceService');
+const alphaVantageService = require('../services/alphaVantageService');
+require('dotenv').config();
 
 // Search for stocks by keyword/symbol
 exports.searchStocks = async (req, res) => {
@@ -31,5 +33,22 @@ exports.getHistoricalData = async (req, res) => {
     }
     console.error('Error fetching historical data:', error);
     res.status(500).json({ error: 'Failed to fetch historical data' });
+  }
+};
+
+// Get news for a stock on a specific date
+exports.getStockNews = async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { date } = req.query;
+    
+    const news = await alphaVantageService.getStockNews(symbol, date);
+    res.json(news);
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error('Error fetching news:', error);
+    res.status(500).json({ error: 'Failed to fetch news' });
   }
 };
